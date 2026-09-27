@@ -1,0 +1,78 @@
+# Konfigurační program pro modul SMLIGHT SLWF-01 Pro (generace v2.1)
+# Firmware: ESPHome s emulací Shelly relé pro SDG monitoring
+
+esphome:
+  name: smlight-ac
+  friendly_name: Klimatizace Airwell
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: esp-idf
+
+# --- PŘIPOJENÍ K VAŠÍ DOMÁCÍ WI-FI ---
+wifi:
+  ssid: "NÁZEV_VAŠÍ_WIFI"
+  password: "HESLO_VAŠÍ_WIFI"
+  
+  # Záložní přístupový bod, pokud by vypadl váš router
+  ap:
+    ssid: "AC-wifi-Airwell"
+    password: "slwf01pro"
+
+# Aktivace síťového vyhledávání pro SDG monitoring
+mdns:
+  disabled: false
+
+# Povolení webového rozhraní
+web_server:
+  port: 80
+  version: 2
+
+# Bezpečné vzdálené nahrávání softwaru
+api:
+  password: ""
+
+ota:
+  - platform: esphome
+
+# --- AKTIVACE SHELLY EMULACE ---
+http_request:
+  user_agent: esphome/device
+  timeout: 10s
+
+# Spárování s vnitřní elektronikou klimatizace Airwell (Midea)
+uart:
+  tx_pin: GPIO11
+  rx_pin: GPIO12
+  baud_rate: 9600
+
+climate:
+  - platform: midea
+    name: "Klimatizace"
+    id: airwell_ac
+    period: 2s
+
+# Virtuální spínač, který SDG monitoring uvidí jako relé Shelly
+switch:
+  - platform: template
+    name: "Shelly Relé Ovládání"
+    id: shelly_relay_0
+    optimistic: true
+    assumed_state: true
+    turn_on_action:
+      - climate.control:
+          id: airwell_ac
+          mode: COOL
+          target_temperature: 23
+    turn_off_action:
+      - climate.control:
+          id: airwell_ac
+          mode: OFF
+
+# Inicializace interního nastavení emulace
+globals:
+  - id: shelly_emulation
+    type: bool
+    restore_mode: ALWAYS_TRUE
+    initial_value: 'true'
